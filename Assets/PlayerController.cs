@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using System;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
@@ -57,9 +58,10 @@ public class PlayerController : NetworkBehaviour
 
         if (IsOwner)
         {
-            transform.position = new Vector3(6.4f, 1f, Random.Range(-22f, -33f));
+            transform.position = new Vector3(6.4f, 1f, UnityEngine.Random.Range(-22f, -33f));
+            //Spawning different player models?
+            //transform.GetChild(Convert.ToInt32(OwnerClientId) % (transform.childCount - 1)).gameObject.SetActive(true);
         }
-
     }
 
     public override void OnNetworkDespawn()

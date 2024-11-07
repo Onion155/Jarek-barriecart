@@ -27,13 +27,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3608009768810623874}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.12548569, y: 0.0753741, z: -0.009561837, w: 0.9891819}
-  m_LocalPosition: {x: -0.3, y: 2.82, z: -7.34}
+  m_LocalRotation: {x: 0.12585272, y: 0, z: 0, w: 0.9920489}
+  m_LocalPosition: {x: 0.08, y: 2.82, z: -7.34}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8538269210750556514}
-  m_LocalEulerAnglesHint: {x: 14.46, y: 8.715, z: 0}
+  m_LocalEulerAnglesHint: {x: 14.46, y: 0, z: 0}
 --- !u!20 &4167640468095459063
 Camera:
   m_ObjectHideFlags: 0
@@ -41,7 +41,7 @@ Camera:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3608009768810623874}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_ClearFlags: 1
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
@@ -314,7 +314,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 554429236
+  GlobalObjectIdHash: 3385768095
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
