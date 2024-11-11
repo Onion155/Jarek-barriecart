@@ -15,11 +15,14 @@ public class PlayerController : NetworkBehaviour
     NetworkVariable<float> turn = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
 
+    // Dictionary to store each player’s model index based on their OwnerClientId
+    private static Dictionary<ulong, int> playerModels = new Dictionary<ulong, int>();
+
     [SerializeField] private Transform fpcam;    // first person camera
     private Camera topcam;      // top view cam
 
-    // Start is called before the first frame update
-    void Start()
+   // Start is called before the first frame update
+   void Start()
     {
         // Cursor.lockState = CursorLockMode.Confined;
     }
@@ -38,6 +41,9 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    // NetworkVariable to store each player's model index and synchronize it across clients
+    private NetworkVariable<int> playerModelIndex = new NetworkVariable<int>(-1); // Initialize to -1 to ensure it's set
+
     public override void OnNetworkSpawn()
     {
         if (IsOwner && fpcam != null)
@@ -47,24 +53,56 @@ public class PlayerController : NetworkBehaviour
             fpcam.GetComponent<Camera>().enabled = true;
         }
         else
+        {
             fpcam.GetComponent<Camera>().enabled = false;
-
+        }
 
         if (!IsOwner)
         {
-            //If this is not the owner, turn off player inputs
-            if (!IsOwner) gameObject.GetComponent<PlayerInput>().enabled = false;
+            // Disable inputs for non-owner clients
+            gameObject.GetComponent<PlayerInput>().enabled = false;
         }
 
         if (IsOwner)
         {
             transform.position = new Vector3(6.4f, 1f, UnityEngine.Random.Range(-22f, -33f));
-            //Spawning different player models?
-            //transform.GetChild(Convert.ToInt32(OwnerClientId) % (transform.childCount - 1)).gameObject.SetActive(true);
+            // Request to set the model for this player on the server
+            SetPlayerModelServerRpc();
+        }
+
+        // Update the player model visibility on this client whenever the model index changes
+        playerModelIndex.OnValueChanged += (oldIndex, newIndex) => SetPlayerModel(newIndex);
+    }
+
+    [ServerRpc]
+    private void SetPlayerModelServerRpc()
+    {
+        // Calculate which model to show based on the OwnerClientId
+        int modelIndex = Convert.ToInt32(OwnerClientId) % (transform.childCount - 1);
+
+        // Set the model index on the server, which will automatically sync to clients
+        playerModelIndex.Value = modelIndex;
+    }
+
+    private void SetPlayerModel(int modelIndex)
+    {
+        // Loop through children, enabling only the specified model
+        for (int i = 0; i < transform.childCount - 1; i++)
+        {
+            transform.GetChild(i).gameObject.SetActive(i == modelIndex);
         }
     }
 
-    public override void OnNetworkDespawn()
+    private void OnDestroy()
+    {
+        // Clean up the event subscription when the player is destroyed
+        playerModelIndex.OnValueChanged -= (oldIndex, newIndex) => SetPlayerModel(newIndex);
+    }
+
+
+
+
+public override void OnNetworkDespawn()
     {
         if (IsOwner && fpcam != null && topcam != null)
         {
