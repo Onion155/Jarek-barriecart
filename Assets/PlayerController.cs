@@ -41,8 +41,11 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    // Dictionary to store each player’s model index on the server
+    private static Dictionary<ulong, int> playerModelIndices = new Dictionary<ulong, int>();
+
     // NetworkVariable to store each player's model index and synchronize it across clients
-    private NetworkVariable<int> playerModelIndex = new NetworkVariable<int>(-1); // Initialize to -1 to ensure it's set
+    private NetworkVariable<int> playerModelIndex = new NetworkVariable<int>(-1);
 
     public override void OnNetworkSpawn()
     {
@@ -59,35 +62,56 @@ public class PlayerController : NetworkBehaviour
 
         if (!IsOwner)
         {
-            // Disable inputs for non-owner clients
             gameObject.GetComponent<PlayerInput>().enabled = false;
         }
 
         if (IsOwner)
         {
             transform.position = new Vector3(6.4f, 1f, UnityEngine.Random.Range(-22f, -33f));
-            // Request to set the model for this player on the server
             SetPlayerModelServerRpc();
         }
 
-        // Update the player model visibility on this client whenever the model index changes
         playerModelIndex.OnValueChanged += (oldIndex, newIndex) => SetPlayerModel(newIndex);
+
+        // For new players, request existing player data from the server
+        if (IsClient && !IsOwner)
+        {
+            RequestExistingPlayersClientRpc();
+        }
     }
 
     [ServerRpc]
     private void SetPlayerModelServerRpc()
     {
-        // Calculate which model to show based on the OwnerClientId
-        int modelIndex = Convert.ToInt32(OwnerClientId) % (transform.childCount - 1);
+        int modelIndex = Convert.ToInt32(OwnerClientId) % (transform.childCount - 2);
 
-        // Set the model index on the server, which will automatically sync to clients
         playerModelIndex.Value = modelIndex;
+        playerModelIndices[OwnerClientId] = modelIndex;
+
+        SetPlayerModel(modelIndex);
+    }
+
+    [ClientRpc]
+    private void UpdateExistingPlayersClientRpc(ulong clientId, int modelIndex)
+    {
+        if (OwnerClientId == clientId)
+        {
+            SetPlayerModel(modelIndex);
+        }
+    }
+
+    [ClientRpc]
+    private void RequestExistingPlayersClientRpc()
+    {
+        foreach (var entry in playerModelIndices)
+        {
+            UpdateExistingPlayersClientRpc(entry.Key, entry.Value);
+        }
     }
 
     private void SetPlayerModel(int modelIndex)
     {
-        // Loop through children, enabling only the specified model
-        for (int i = 0; i < transform.childCount - 1; i++)
+        for (int i = 0; i < transform.childCount - 2; i++)
         {
             transform.GetChild(i).gameObject.SetActive(i == modelIndex);
         }
@@ -95,14 +119,18 @@ public class PlayerController : NetworkBehaviour
 
     private void OnDestroy()
     {
-        // Clean up the event subscription when the player is destroyed
         playerModelIndex.OnValueChanged -= (oldIndex, newIndex) => SetPlayerModel(newIndex);
+
+        if (IsServer)
+        {
+            playerModelIndices.Remove(OwnerClientId);
+        }
     }
 
 
 
 
-public override void OnNetworkDespawn()
+    public override void OnNetworkDespawn()
     {
         if (IsOwner && fpcam != null && topcam != null)
         {
